@@ -1,0 +1,51 @@
+# Binaries
+/bin/
+/build/
+
+# Vendor directory (if vendoring dependencies)
+/vendor/
+
+# Go modules cache
+/go.sum
+/go.mod
+
+# IDE/editor files
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Environment variables file
+.env
+
+# Docker volumes and containers (optional, usually not tracked)
+docker-compose.override.yml
+
+# Compiled files (optional)
+/*.exe
+/*.exe~
+/*.dll
+/*.so
+/*.dylib
+
+# Coverage reports
+*.out
+
+# Test results
+test_results/
+
+# Miscellaneous
+*.swp
+*~
+
+# If you build binaries here
+app
+

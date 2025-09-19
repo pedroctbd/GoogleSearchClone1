@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v9"
 	"github.com/go-chi/chi/v5"
@@ -11,22 +12,42 @@ import (
 	"googlesearchclone1.com/utils"
 )
 
+type Document struct {
+	Prefix    string    `json:"prefix"`
+	Count     int       `json:"count"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 func main() {
 
-	// ctx := context.Background()
 	r := chi.NewRouter()
 
 	if err := godotenv.Load(); err != nil {
 		fmt.Println("No .env file found or failed to load")
 	}
 
-	es, _ := elasticsearch.NewDefaultClient()
-	log.Println(es.Info())
+	cfg := elasticsearch.Config{
+
+		Addresses: []string{
+			"http://localhost:9200",
+		},
+		Username: os.Getenv("ELASTIC_USERNAME"),
+		Password: os.Getenv("ELASTIC_PASSWORD"),
+	}
+	client, err := elasticsearch.NewClient(cfg)
+	if err != nil {
+		panic(err)
+	}
+	_, err = client.Info()
+	if err != nil {
+		panic(err)
+	}
 
 	r.Get("/complete/search", func(w http.ResponseWriter, r *http.Request) {
 
 		searchPrefix := r.URL.Query().Get("q")
-		log.Println(searchPrefix)
+
 		utils.Encode(w, r, http.StatusAccepted, fmt.Sprintf("current prefix = %s", searchPrefix))
 		return
 

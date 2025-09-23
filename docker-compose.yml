@@ -12,6 +12,12 @@ services:
       - "${ELASTIC_PORT}:9200"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
+
+  rabbitmq:
+    image: rabbitmq:3.8-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
       
 volumes:
   elasticsearch-data:

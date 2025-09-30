@@ -1,23 +1,32 @@
 services:
 
   elasticsearch:
-    image: elasticsearch:9.0.7
+    image: elasticsearch:9.1.4
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - xpack.security.enabled=true
-
+      - xpack.security.enabled=false
     ports:
       - "${ELASTIC_PORT}:9200"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: kibana:9.1.4
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch   
+    environment:
+      - ELASTICSEARCH_HOSTS=["http://elasticsearch:9200"]
 
   rabbitmq:
     image: rabbitmq:3.8-management
     ports:
       - "5672:5672"
       - "15672:15672"
+    
+    
       
 volumes:
   elasticsearch-data:

@@ -75,10 +75,8 @@ func (app *Application) searchHandler(w http.ResponseWriter, r *http.Request) {
 			Body:        []byte(searchTerm),
 		})
 	if err != nil {
-		// Just log this error, don't fail the user's request
 		log.Printf("WARNING: failed to publish to rabbitmq: %v", err)
 	}
 
-	// --- Respond to Client ---
 	utils.Encode(w, r, http.StatusOK, suggestions)
 }

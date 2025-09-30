@@ -89,7 +89,7 @@ func SetupElasticSearchClient() (*elasticsearch.Client, error) {
 
 }
 func SetupRabbitMqClient() (*amqp.Connection, *amqp.Channel, error) {
-	conn, err := amqp.Dial(os.Getenv("http://localhost:5672"))
+	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
 		log.Fatalf("failed to connect to RabbitMQ: %v", err)
 		return nil, nil, err

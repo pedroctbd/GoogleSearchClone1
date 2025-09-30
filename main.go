@@ -56,11 +56,11 @@ func SetupElasticSearchClient() (*elasticsearch.Client, error) {
 	}
 	client, err := elasticsearch.NewClient(cfg)
 	if err != nil {
-		panic(err)
+		log.Panicf("Error creating elastic client: %v", err)
 	}
 	_, err = client.Info()
 	if err != nil {
-		panic(err)
+		log.Panicf("Error showing elastic client info: %v", err)
 	}
 
 	indexName := "search-terms"
@@ -74,17 +74,27 @@ func SetupElasticSearchClient() (*elasticsearch.Client, error) {
 		}
 	}`
 
-	// Use the client to create the index
-	res, err := client.Indices.Create(
-		indexName,
-		client.Indices.Create.WithBody(strings.NewReader(mapping)),
-	)
-
-	fmt.Print(res)
-
+	res, err := client.Indices.Exists([]string{indexName})
 	if err != nil {
-		log.Fatalf("Error creating index: %s", err)
+		log.Fatalf("Error checking if index exists: %s", err)
 	}
+	defer res.Body.Close()
+
+	if res.StatusCode == 404 {
+
+		res, err := client.Indices.Create(
+			indexName,
+			client.Indices.Create.WithBody(strings.NewReader(mapping)),
+		)
+
+		fmt.Print(res)
+
+		if err != nil {
+			log.Fatalf("Error creating index: %s", err)
+		}
+		return client, nil
+	}
+
 	return client, nil
 
 }

@@ -10,16 +10,15 @@ import (
 	"github.com/streadway/amqp"
 )
 
-// StartWorker starts the RabbitMQ consumer
 func StartWorker(es *elasticsearch.Client, ch *amqp.Channel) {
 	msgs, err := ch.Consume(
-		"search-terms", // Use the same queue name as your main app
-		"",             // consumer
-		true,           // auto-ack
-		false,          // exclusive
-		false,          // no-local
-		false,          // no-wait
-		nil,            // args
+		"search-terms",
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
 	)
 	if err != nil {
 		log.Fatalf("failed to register a consumer: %v", err)

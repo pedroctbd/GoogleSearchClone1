@@ -7,7 +7,7 @@ type SuggestionDoc struct {
 	} `json:"suggest"`
 }
 
-type SearchResponse struct {
+type CompletionSearchResponse struct {
 	Suggest struct {
 		TermSuggester []struct {
 			Options []struct {
@@ -16,4 +16,24 @@ type SearchResponse struct {
 			} `json:"options"`
 		} `json:"term-suggester"`
 	} `json:"suggest"`
+}
+
+type SearchResponse struct {
+	Hits struct {
+		Hits []struct {
+			Source struct {
+				Title   string `json:"title"`
+				Content string `json:"content"`
+			} `json:"_source"`
+			Highlight struct {
+				Title   []string `json:"title"`
+				Content []string `json:"content"`
+			} `json:"highlight"`
+		} `json:"hits"`
+	} `json:"hits"`
+}
+
+type SearchResult struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
 }

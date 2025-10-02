@@ -54,49 +54,69 @@ func SetupElasticSearchClient() (*elasticsearch.Client, error) {
 		Username: os.Getenv("ELASTIC_USERNAME"),
 		Password: os.Getenv("ELASTIC_PASSWORD"),
 	}
-	client, err := elasticsearch.NewClient(cfg)
+	es, err := elasticsearch.NewClient(cfg)
 	if err != nil {
 		log.Panicf("Error creating elastic client: %v", err)
 	}
-	_, err = client.Info()
+	_, err = es.Info()
 	if err != nil {
 		log.Panicf("Error showing elastic client info: %v", err)
 	}
 
-	indexName := "search-terms"
-	mapping := `{
+	suggestionsMapping := `{
 		"mappings": {
 			"properties": {
-				"suggest": {
-					"type": "completion"
-				}
+				"suggest": { "type": "completion" },
+				"search_count": { "type": "integer" }
 			}
 		}
 	}`
 
-	res, err := client.Indices.Exists([]string{indexName})
-	if err != nil {
-		log.Fatalf("Error checking if index exists: %s", err)
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode == 404 {
-
-		res, err := client.Indices.Create(
-			indexName,
-			client.Indices.Create.WithBody(strings.NewReader(mapping)),
-		)
-
-		fmt.Print(res)
-
-		if err != nil {
-			log.Fatalf("Error creating index: %s", err)
+	documentsMapping := `{
+		"mappings": {
+			"properties": {
+				"title": { "type": "text" },
+				"url": { "type": "keyword" },
+				"content": { "type": "text" }
+			}
 		}
-		return client, nil
+	}`
+	if err := createIndexIfNotExists(es, "search-terms", suggestionsMapping); err != nil {
+		log.Fatalf("Error setting up search-terms index: %v", err)
 	}
 
-	return client, nil
+	if err := createIndexIfNotExists(es, "documents", documentsMapping); err != nil {
+		log.Fatalf("Error setting up documents index: %v", err)
+	}
 
+	return es, nil
+
+}
+
+func createIndexIfNotExists(es *elasticsearch.Client, indexName string, mapping string) error {
+
+	res, err := es.Indices.Exists([]string{indexName})
+	if err != nil {
+		return fmt.Errorf("cannot check if index exists: %w", err)
+	}
+
+	if res.StatusCode == http.StatusOK {
+		return nil
+	}
+
+	if res.StatusCode != http.StatusNotFound {
+		return fmt.Errorf("error checking if index exists %s", err)
+	}
+
+	res, err = es.Indices.Create(indexName, es.Indices.Create.WithBody(strings.NewReader(mapping)))
+	if err != nil {
+		return fmt.Errorf("cannot create index: %w", err)
+	}
+	if res.IsError() {
+		return fmt.Errorf("cannot create index: %s", res.String())
+	}
+
+	return nil
 }
 func SetupRabbitMqClient() (*amqp.Connection, *amqp.Channel, error) {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")

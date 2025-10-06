@@ -15,7 +15,7 @@ import (
 
 type Application struct {
 	ES *elasticsearch.Client
-	MQ *amqp.Channel
+	CH *amqp.Channel
 }
 
 func (app *Application) routes() http.Handler {
@@ -66,7 +66,7 @@ func (app *Application) searchCompletionHandler(w http.ResponseWriter, r *http.R
 		suggestions = append(suggestions, option.Text)
 	}
 
-	err = app.MQ.Publish(
+	err = app.CH.Publish(
 		"",
 		"search-terms",
 		false,

@@ -26,20 +26,21 @@ func main() {
 
 	}
 	//RabbitMQ config
-	mqConn, mqChannel, err := SetupRabbitMqClient()
+	mqConn, consumerCh, producerCh, err := SetupRabbitMqClient()
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 	defer mqConn.Close()
-	defer mqChannel.Close()
+	defer producerCh.Close()
+	defer consumerCh.Close()
 
 	app := &Application{
 		ES: esClient,
-		MQ: mqChannel,
+		CH: producerCh,
 	}
 
-	go StartWorker(esClient, mqChannel)
+	go StartWorker(esClient, consumerCh)
 
 	http.ListenAndServe(":3000", app.routes())
 }
@@ -118,20 +119,23 @@ func createIndexIfNotExists(es *elasticsearch.Client, indexName string, mapping 
 
 	return nil
 }
-func SetupRabbitMqClient() (*amqp.Connection, *amqp.Channel, error) {
+func SetupRabbitMqClient() (*amqp.Connection, *amqp.Channel, *amqp.Channel, error) {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
-		log.Fatalf("failed to connect to RabbitMQ: %v", err)
-		return nil, nil, err
+		return nil, nil, nil, fmt.Errorf("failed to connect to RabbitMQ: %w", err)
 	}
 
-	ch, err := conn.Channel()
+	consumerCh, err := conn.Channel()
 	if err != nil {
-		log.Fatalf("failed to open a channel: %v", err)
-		return nil, nil, err
+		return nil, nil, nil, fmt.Errorf("failed to open consumer channel: %w", err)
 	}
 
-	q, err := ch.QueueDeclare(
+	publisherCh, err := conn.Channel()
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to open publisher channel: %w", err)
+	}
+
+	_, err = consumerCh.QueueDeclare(
 		"search-terms",
 		true,
 		false,
@@ -139,11 +143,10 @@ func SetupRabbitMqClient() (*amqp.Connection, *amqp.Channel, error) {
 		false,
 		nil,
 	)
-	fmt.Print(q)
 	if err != nil {
-		log.Fatalf("failed to declare a queue: %v", err)
-		return nil, nil, err
+		return nil, nil, nil, fmt.Errorf("failed to declare a queue: %w", err)
 	}
 
-	return conn, ch, nil
+	// Return both channels successfully
+	return conn, consumerCh, publisherCh, nil
 }
